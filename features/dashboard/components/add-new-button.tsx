@@ -5,10 +5,35 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import React from "react";
+import TemplateSelectionModal from "./template-selection-modal";
+import { createPlayground } from "../actions";
+import { toast } from "sonner";
 
 const AddNewButton = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<{
+    title: string;
+    template: "REACT" | "NEXTJS" | "EXPRESS" | "VUE" | "HONO" | "ANGULAR";
+    description?: string;
+  } | null>(null);
+  const router = useRouter()
+
+  const handleSubmit = async(data:{
+       title: string;
+    template: "REACT" | "NEXTJS" | "EXPRESS" | "VUE" | "HONO" | "ANGULAR";
+    description?: string;
+  })=>{
+    setSelectedTemplate(data);
+    const res = await createPlayground(data);
+    toast.success("Playrground created successfully");
+
+    setIsModalOpen(false);
+    router.push(`/playground/${res?.id}`)
+  }
   return (
+    <>
     <div
+    onClick={()=>setIsModalOpen(true)}
       className="group px-6 py-6 flex flex-row justify-between items-center border rounded-lg bg-muted cursor-pointer 
         transition-all duration-300 ease-in-out
         hover:bg-background hover:border-[#E93F3F] hover:scale-[1.02]
@@ -36,17 +61,22 @@ const AddNewButton = () => {
       </div>
 
       <div className="realtive overflow-hidden">
-        <Image src="/add-new.svg"
-        alt="Create new Playground"
-        width={150}
-        height={150}
-        className="transition-transform duration-300 group-hover:scale-110"
+        <Image
+          src="/add-new.svg"
+          alt="Create new Playground"
+          width={150}
+          height={150}
+          className="transition-transform duration-300 group-hover:scale-110"
         />
-      
-        </div>
-
-      
+      </div>
     </div>
+    <TemplateSelectionModal
+    isOpen={isModalOpen}
+    onClose={()=>setIsModalOpen(false)}
+    onSubmit={handleSubmit}
+    
+    />
+    </>
   );
 };
 
