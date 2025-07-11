@@ -105,8 +105,8 @@ export const duplicateProjectById = async(id:string)=>{
             }
         })
 
-        revalidatePath("/dashboard");
         
+            revalidatePath("/dashboard")
         return duplicatedPlayground
     } catch (error) {
         console.error(error);
