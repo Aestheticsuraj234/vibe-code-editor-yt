@@ -28,6 +28,7 @@ interface FileExplorerState {
   closeFile: (fileId: string) => void;
   closeAllFiles: () => void;
   handleAddFile: (
+    
     newFile: TemplateFile,
     parentPath: string,
     writeFileSync: (filePath: string, content: string) => Promise<void>,
@@ -82,30 +83,32 @@ export const useFileExplorer = create<FileExplorerState>((set, get) => ({
   setOpenFiles: (files) => set({ openFiles: files }),
   setActiveFileId: (fileId) => set({ activeFileId: fileId }),
 
-  openFile:(file)=>{
-    const fileId = generateFileId(file , get().templateData!);
-    const {openFiles} = get();
-    const existingFile = openFiles.find((f)=>f.id === fileId)
+  openFile: (file) => {
+  
+    const fileId = generateFileId(file, get().templateData!);
+    const { openFiles } = get();
+    const existingFile = openFiles.find((f) => f.id === fileId);
 
     if (existingFile) {
-        set({ activeFileId: fileId, editorContent: existingFile.content });
-        return;
-      }
+      set({ activeFileId: fileId, editorContent: existingFile.content });
+      return;
+    }
 
-      const newOpenFile: OpenFile = {
-        ...file,
-        id: fileId,
-        hasUnsavedChanges: false,
-        content: file.content || "",
-        originalContent: file.content || "",
-      };
+    const newOpenFile: OpenFile = {
+      ...file,
+      id: fileId,
+      hasUnsavedChanges: false,
+      content: file.content || "",
+      originalContent: file.content || "",
+    };
 
-      set((state) => ({
-        openFiles: [...state.openFiles, newOpenFile],
-        activeFileId: fileId,
-        editorContent: file.content || "",
-      }));
+    set((state) => ({
+      openFiles: [...state.openFiles, newOpenFile],
+      activeFileId: fileId,
+      editorContent: file.content || "",
+    }));
   },
+
 
   closeFile: (fileId) => {
     const { openFiles, activeFileId } = get();
