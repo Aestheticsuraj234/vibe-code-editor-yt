@@ -7,7 +7,7 @@ import { useFileExplorer } from "@/features/playground/hooks/useFileExplorer";
 
 import { usePlayground } from "@/features/playground/hooks/usePlayground";
 import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { toast } from "sonner";
 import {
@@ -49,6 +49,10 @@ import {
 } from "@/components/ui/resizable";
 import { TemplateFile } from "@/features/playground/types";
 import PlaygroundEditor from "@/features/playground/components/playground-editor";
+import { useWebContainer } from "@/features/webContainers/hooks/useWebContainer";
+import WebContainerPreview from "@/features/webContainers/components/webcontainer-preview";
+import LoadingStep from "@/components/ui/loader";
+
 
 const Page = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,24 +79,87 @@ const Page = () => {
     setOpenFiles,
   } = useFileExplorer();
 
-  useEffect(()=>{
-    setPlaygroundId(id);
-  },[id , setPlaygroundId])
+  const {
+    serverUrl,
+    isLoading:containerLoading,
+    error:containerError,
+    instance,
+    writeFileSync
 
-  useEffect(()=>{
-    if(templateData && !openFiles.length){
-      setTemplateData(templateData)
+    // @ts-ignore
+  } = useWebContainer({templateData})
+  const lastSyncedContent = useRef<Map<string, string>>(new Map());
+  useEffect(() => {
+    setPlaygroundId(id);
+  }, [id, setPlaygroundId]);
+
+  useEffect(() => {
+    if (templateData && !openFiles.length) {
+      setTemplateData(templateData);
     }
-  },[templateData , setTemplateData , openFiles.length])
+  }, [templateData, setTemplateData, openFiles.length]);
 
   const activeFile = openFiles.find((file) => file.id === activeFileId);
   const hasUnsavedChanges = openFiles.some((file) => file.hasUnsavedChanges);
 
   const handleFileSelect = (file: TemplateFile) => {
-    console.log("HandlePath",file)
+    console.log("HandlePath", file);
     openFile(file);
   };
-  console.log(openFiles)
+  
+  if(error){
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold text-red-600 mb-2">
+          Something went wrong
+        </h2>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()} variant="destructive">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  if(isLoading){
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
+        <div className="w-full max-w-md p-6 rounded-lg shadow-sm border">
+          <h2 className="text-xl font-semibold mb-6 text-center">
+            Loading Playground
+          </h2>
+          <div className="mb-8">
+            <LoadingStep
+              currentStep={1}
+              step={1}
+              label="Loading playground data"
+            />
+            <LoadingStep
+              currentStep={2}
+              step={2}
+              label="Setting up environment"
+            />
+            <LoadingStep currentStep={3} step={3} label="Ready to code" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if(!templateData){
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
+      <FolderOpen className="h-12 w-12 text-amber-500 mb-4" />
+      <h2 className="text-xl font-semibold text-amber-600 mb-2">
+        No template data available
+      </h2>
+      <Button onClick={() => window.location.reload()} variant="outline">
+        Reload Template
+      </Button>
+    </div>
+    )
+  }
 
   return (
     <TooltipProvider>
@@ -225,9 +292,8 @@ const Page = () => {
                         ))}
                       </TabsList>
 
-                      {
-                        openFiles.length > 1 && (
-                          <Button
+                      {openFiles.length > 1 && (
+                        <Button
                           size="sm"
                           variant="ghost"
                           onClick={closeAllFiles}
@@ -235,29 +301,45 @@ const Page = () => {
                         >
                           Close All
                         </Button>
-                        )
-                      }
+                      )}
                     </div>
                   </Tabs>
                 </div>
 
                 <div className="flex-1">
-                     <ResizablePanelGroup
-                     direction="horizontal"
-                     className="h-full"
-                     >
-<ResizablePanel defaultSize={isPreviewVisible ? 50 : 100}>
+                  <ResizablePanelGroup
+                    direction="horizontal"
+                    className="h-full"
+                  >
+                    <ResizablePanel defaultSize={isPreviewVisible ? 50 : 100}>
+                      <PlaygroundEditor
+                        activeFile={activeFile}
+                        content={activeFile?.content || ""}
+                        onContentChange={(value) =>
+                          activeFileId && updateFileContent(activeFileId, value)
+                        }
+                      />
+                    </ResizablePanel>
 
-  <PlaygroundEditor
-  activeFile={activeFile}
-  content={activeFile?.content || ""}
-  onContentChange={(value)=>
-    activeFileId && updateFileContent(activeFileId , value)
-  }
-  />
+                      
+                    {isPreviewVisible && (
+                      <>
+                        <ResizableHandle />
+                        <ResizablePanel defaultSize={50}>
+                          <WebContainerPreview
+                            templateData={templateData}
+                            instance={instance}
+                            writeFileSync={writeFileSync}
+                            isLoading={containerLoading}
+                            error={containerError}
+                            serverUrl={serverUrl!}
+                            forceResetup={false}
+                          />
+                        </ResizablePanel>
+                      </>
+                    )}
 
-</ResizablePanel>
-                     </ResizablePanelGroup>
+                  </ResizablePanelGroup>
                 </div>
               </div>
             ) : (
