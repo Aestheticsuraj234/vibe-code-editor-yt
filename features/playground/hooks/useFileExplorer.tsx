@@ -138,6 +138,45 @@ export const useFileExplorer = create<FileExplorerState>((set, get) => ({
     });
   },
 
+  handleAddFile: async (newFile, parentPath, writeFileSync, instance, saveTemplateData) => {
+    const { templateData } = get();
+    if (!templateData) return;
+
+    try {
+      const updatedTemplateData = JSON.parse(JSON.stringify(templateData)) as TemplateFolder;
+      const pathParts = parentPath.split("/");
+      let currentFolder = updatedTemplateData;
+
+      for (const part of pathParts) {
+        if (part) {
+          const nextFolder = currentFolder.items.find(
+            (item) => "folderName" in item && item.folderName === part
+          ) as TemplateFolder;
+          if (nextFolder) currentFolder = nextFolder;
+        }
+      }
+
+      currentFolder.items.push(newFile);
+      set({ templateData: updatedTemplateData });
+      toast.success(`Created file: ${newFile.filename}.${newFile.fileExtension}`);
+
+      // Use the passed saveTemplateData function
+      await saveTemplateData(updatedTemplateData);
+
+      // Sync with web container
+      if (writeFileSync) {
+        const filePath = parentPath
+          ? `${parentPath}/${newFile.filename}.${newFile.fileExtension}`
+          : `${newFile.filename}.${newFile.fileExtension}`;
+        await writeFileSync(filePath, newFile.content || "");
+      }
+
+      get().openFile(newFile);
+    } catch (error) {
+      console.error("Error adding file:", error);
+      toast.error("Failed to create file");
+    }
+  },
   handleAddFolder: async (newFolder, parentPath, instance, saveTemplateData) => {
     const { templateData } = get();
     if (!templateData) return;

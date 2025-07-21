@@ -124,6 +124,29 @@ const TemplateFileTree = ({
   const handleAddRootFolder = () => {
     setIsNewFolderDialogOpen(true)
   }
+
+    const handleCreateFile = (filename: string, extension: string) => {
+    if (onAddFile && isRootFolder) {
+      const newFile: TemplateFile = {
+        filename,
+        fileExtension: extension,
+        content: "",
+      }
+      onAddFile(newFile, "")
+    }
+    setIsNewFileDialogOpen(false)
+  }
+
+  const handleCreateFolder = (folderName: string) => {
+    if (onAddFolder && isRootFolder) {
+      const newFolder: TemplateFolder = {
+        folderName,
+        items: [],
+      }
+      onAddFolder(newFolder, "")
+    }
+    setIsNewFolderDialogOpen(false)
+  }
   return (
     <Sidebar>
       <SidebarContent>
@@ -192,12 +215,12 @@ const TemplateFileTree = ({
 <NewFileDialog
 isOpen={isNewFileDialogOpen}
 onClose={()=>{setIsNewFileDialogOpen(false)}}
-onCreateFile={()=>{}}
+onCreateFile={handleCreateFile}
 />
 <NewFolderDialog
         isOpen={isNewFolderDialogOpen}
         onClose={() => setIsNewFolderDialogOpen(false)}
-        onCreateFolder={()=>{}}
+        onCreateFolder={handleCreateFolder}
       />
 
     </Sidebar>
@@ -218,6 +241,7 @@ export function NewFileDialog({ isOpen, onClose, onCreateFile }: NewFileDialogPr
   const [extension, setExtension] = React.useState("js")
 
   const handleSubmit = (e: React.FormEvent) => {
+    console.log("function is called")
     e.preventDefault()
     if (filename.trim()) {
       onCreateFile(filename.trim(), extension.trim() || "js")
